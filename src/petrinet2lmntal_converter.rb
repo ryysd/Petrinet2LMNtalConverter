@@ -111,6 +111,7 @@ class Petrinet2LMNtalConverter
 
     guard = []
     guard.push inputs.map {|input| "#{make_local_var_name var_table[input.id]}>0"}.join ','unless inputs.empty?
+    guard.push self_loop_places.map {|self_loop| "#{var_table[self_loop.id]}>0"}.join ','unless self_loop_places.empty?
     guard.push inputs.map {|input| "#{make_dec_expr input, var_table}"}.join ',' unless inputs.empty?
     guard.push outputs.map {|output| "#{make_inc_expr output, var_table}"}.join ',' unless outputs.empty?
     guard.join ', '

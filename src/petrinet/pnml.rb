@@ -18,6 +18,10 @@ class PNML
     xml_hash['pnml']['net']['type'] == 'P/T net'
   end
 
+  def self.single_element?(element)
+    element.size == 1 || (element.instance_of? Hash)
+  end
+
   def self.parse(file_name)
     xml = (File.open file_name).read
 
@@ -27,8 +31,8 @@ class PNML
     net = pipe ? hash['pnml']['net'] : hash['pnml']['net']['page']
     value_key = pipe ? 'value' : 'text'
 
-    hash_places = if net['place'].size == 1 then [net['place']] else net['place'] end
-    hash_transitions = if net['transition'].size == 1 then [net['transition']] else net['transition'] end
+    hash_places = if single_element? net['place'] then [net['place']] else net['place'] end
+    hash_transitions = if single_element? net['transition'] then [net['transition']] else net['transition'] end
     places = hash_places.map{|p| Place.new p['id'], (p.has_key? 'name') ? (p['name'][value_key]) : p['id'], (p.has_key? 'initialMarking') ? (p['initialMarking'][value_key].gsub(/[^0-9]/, "").to_i) : 0}
     transitions = hash_transitions.map{|t| Transition.new t['id'], (t.has_key? 'name') ? t['name'][value_key] : t['id']}
 
