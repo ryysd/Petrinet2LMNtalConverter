@@ -1,5 +1,15 @@
 class Transition < PetrinetNode
   def initialize(id, name)
-    super
+    super id, name
+    @inputs = []
+    @outputs = []
+  end
+
+  def add_input_place(place)
+    @inputs.push(place)
+  end
+
+  def add_output_place(place)
+    @outputs.push(place)
   end
 end

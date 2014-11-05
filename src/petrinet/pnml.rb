@@ -12,7 +12,7 @@ class PNML
     net = pipe ? hash['pnml']['net'] : hash['pnml']['net']['page']
     value_key = pipe ? 'value' : 'text'
 
-    places = net['place'].map{|p| Place.new p['id'], (p.has_key? 'name') ? (p['name'][value_key]) : p['id'], (p.has_key? 'initialMarking') ? (p['initialMarking'][value_key].gsub(/[^0-9]/, "").to_i) : 0}
+    places = net['place'].map{|p| Place.new p['id'], (p.has_key? 'name') ? p['name'][value_key] : p['id']}
     transitions = net['transition'].map{|t| Transition.new t['id'], (t.has_key? 'name') ? t['name'][value_key] : t['id']}
 
     nodes = places + transitions
@@ -23,10 +23,17 @@ class PNML
       source = nodes.find{|n| n.id == source_id}
       target = nodes.find{|n| n.id == target_id}
 
-      source.add_arc Arc.new source, target, (a.has_key? 'inscription') ? (a['inscription'][value_key].gsub(/[^0-9]/, "").to_i) : 1
+      case source
+      when Place
+        target.add_input_place source
+      when Transition
+        source.add_output_place target
+      else
+        p 'invalid type'
+      end
     end
 
-    Petrinet.new places, transitions
+    transitions
   end
 end
 
