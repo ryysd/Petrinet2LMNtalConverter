@@ -13,17 +13,25 @@ class Petrinet2LMNtalConverter
     lmntal = []
     lmntal.push make_initial_var_names petrinet.places
     expressions = petrinet.transitions.map do |transition|
-      var_table = create_var_table transition
-      "#{make_prefix transition}\n#{make_lhs transition, var_table} :- #{make_guard transition, var_table} | #{make_rhs transition, var_table}"
+      self_loop = calc_self_loop_places transition
+      var_table = create_var_table transition, self_loop
+      "#{make_prefix transition}\n#{make_lhs transition, var_table, self_loop} :- #{make_guard transition, var_table, self_loop} | #{make_rhs transition, var_table, self_loop}"
     end
     lmntal.push expressions
 
     (lmntal.join ".\n") + ".\n"
   end
 
-  def create_var_table(transition)
-    places = (transition.inputs + transition.outputs).uniq
-    places.map.with_index {|p, idx| [p.id, (AlphabetSerialNumberGenerator.generate idx)]}.to_h
+  def calc_self_loop_places(transition)
+    transition.inputs & transition.outputs
+  end
+
+  def create_var_table(transition, self_loop_places)
+    places = (transition.inputs + transition.outputs).uniq - self_loop_places
+    var_table = places.map.with_index {|p, idx| [p.id, (AlphabetSerialNumberGenerator.generate idx)]}
+    loop_var_table = self_loop_places.map.with_index {|p, idx| [p.id, (AlphabetSerialNumberGenerator.generate idx).upcase]}
+
+    (var_table + loop_var_table).to_h
   end
 
   def make_initial_var_names(places)
@@ -40,6 +48,10 @@ class Petrinet2LMNtalConverter
 
   def make_global_var_name(id, val)
     "#{id}(#{val})"
+  end
+
+  def make_loop_var_name(place, var_table)
+    make_global_var_name place.id, var_table[place.id]
   end
 
   def make_lhs_var_name(place, var_table)
@@ -66,28 +78,36 @@ class Petrinet2LMNtalConverter
     prefix.join "\n"
   end
 
-  def make_lhs(transition, var_table)
-    lhs = []
-    lhs.push transition.inputs.map {|input| make_lhs_var_name input, var_table}.join ','
-    lhs.push transition.outputs.map {|output| make_lhs_var_name output, var_table}.join ','
+  def make_lhs(transition, var_table, self_loop_places)
+    inputs = transition.inputs - self_loop_places
+    outputs = transition.outputs - self_loop_places
 
+    lhs = []
+    lhs.push inputs.map {|input| make_lhs_var_name input, var_table}.join ',' unless inputs.empty?
+    lhs.push outputs.map {|output| make_lhs_var_name output, var_table}.join ',' unless outputs.empty?
+    lhs.push self_loop_places.map {|self_loop| make_loop_var_name self_loop, var_table}.join ',' unless self_loop_places.empty?
     lhs.join ', '
   end
 
-  def make_rhs(transition, var_table)
-    rhs = []
-    rhs.push transition.inputs.map {|input| make_rhs_var_name input, var_table}.join ','
-    rhs.push transition.outputs.map {|output| make_rhs_var_name output, var_table}.join ','
+  def make_rhs(transition, var_table, self_loop_places)
+    inputs = transition.inputs - self_loop_places
+    outputs = transition.outputs - self_loop_places
 
+    rhs = []
+    rhs.push inputs.map {|input| make_rhs_var_name input, var_table}.join ',' unless inputs.empty?
+    rhs.push outputs.map {|output| make_rhs_var_name output, var_table}.join ',' unless outputs.empty?
+    rhs.push self_loop_places.map {|self_loop| make_loop_var_name self_loop, var_table}.join ',' unless self_loop_places.empty?
     rhs.join ', '
   end
 
-  def make_guard(transition, var_table)
-    guard = []
-    guard.push transition.inputs.map {|input| "#{make_local_var_name var_table[input.id]}>0"}.join ','
-    guard.push transition.inputs.map {|input| "#{make_dec_expr input, var_table}"}.join ','
-    guard.push transition.outputs.map {|output| "#{make_inc_expr output, var_table}"}.join ','
+  def make_guard(transition, var_table, self_loop_places)
+    inputs = transition.inputs - self_loop_places
+    outputs = transition.outputs - self_loop_places
 
+    guard = []
+    guard.push inputs.map {|input| "#{make_local_var_name var_table[input.id]}>0"}.join ','unless inputs.empty?
+    guard.push inputs.map {|input| "#{make_dec_expr input, var_table}"}.join ',' unless inputs.empty?
+    guard.push outputs.map {|output| "#{make_inc_expr output, var_table}"}.join ',' unless outputs.empty?
     guard.join ', '
   end
 end
