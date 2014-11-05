@@ -24,8 +24,10 @@ class PNML
     net = pipe ? hash['pnml']['net'] : hash['pnml']['net']['page']
     value_key = pipe ? 'value' : 'text'
 
-    places = net['place'].map{|p| Place.new p['id'], (p.has_key? 'name') ? (p['name'][value_key]) : p['id'], (p.has_key? 'initialMarking') ? (p['initialMarking'][value_key].gsub(/[^0-9]/, "").to_i) : 0}
-    transitions = net['transition'].map{|t| Transition.new t['id'], (t.has_key? 'name') ? t['name'][value_key] : t['id']}
+    hash_places = if net['place'].size == 1 then [net['place']] else net['place'] end
+    hash_transitions = if net['transition'].size == 1 then [net['transition']] else net['transition'] end
+    places = hash_places.map{|p| Place.new p['id'], (p.has_key? 'name') ? (p['name'][value_key]) : p['id'], (p.has_key? 'initialMarking') ? (p['initialMarking'][value_key].gsub(/[^0-9]/, "").to_i) : 0}
+    transitions = hash_transitions.map{|t| Transition.new t['id'], (t.has_key? 'name') ? t['name'][value_key] : t['id']}
 
     nodes = places + transitions
     net['arc'].each do |a| 
