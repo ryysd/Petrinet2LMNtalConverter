@@ -4,9 +4,10 @@ require_relative './place.rb'
 require_relative './transition.rb'
 
 class Petrinet
-  attr_reader :places, :transitions
+  attr_reader :name, :places, :transitions
 
-  def initialize(places, transitions)
+  def initialize(name, places, transitions)
+    @name = name
     @places = places
     @transitions = transitions
   end
@@ -17,7 +18,9 @@ class PNML
     xml_hash['pnml']['net']['type'] == 'P/T net'
   end
 
-  def self.parse(xml)
+  def self.parse(file_name)
+    xml = (File.open file_name).read
+
     hash =  Hash.from_xml xml
     pipe = pipe_form_pnml? hash
 
@@ -47,7 +50,9 @@ class PNML
       end
     end
 
-    Petrinet.new places, transitions
+    name_hash = hash['pnml']['net']['name']
+    name = if name_hash.nil? then nil else name_hash['text'] end
+    Petrinet.new (name || (File.basename file_name)), places, transitions
   end
 end
 

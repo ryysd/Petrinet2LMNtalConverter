@@ -11,6 +11,7 @@ end
 class Petrinet2LMNtalConverter
   def convert(petrinet)
     lmntal = []
+    lmntal.push make_header petrinet
     lmntal.push make_initial_var_names petrinet.places
     expressions = petrinet.transitions.map do |transition|
       self_loop = calc_self_loop_places transition
@@ -32,6 +33,10 @@ class Petrinet2LMNtalConverter
     loop_var_table = self_loop_places.map.with_index {|p, idx| [p.id, (AlphabetSerialNumberGenerator.generate idx).upcase]}
 
     (var_table + loop_var_table).to_h
+  end
+
+  def make_header(petrinet)
+    "// #{petrinet.name}"
   end
 
   def make_initial_var_names(places)
@@ -73,7 +78,7 @@ class Petrinet2LMNtalConverter
   def make_prefix(transition)
     prefix = []
     # prefix.push "// #{transition.inputs.map {|input| input.id}.join ','} -> #{transition.outputs.map {|input| input.id}.join ','}"
-    prefix.push "#{transition.id} @@"
+    prefix.push "#{transition.id.gsub(/\W+/, '')} @@"
 
     prefix.join "\n"
   end
