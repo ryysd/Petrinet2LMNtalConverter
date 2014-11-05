@@ -1,4 +1,6 @@
 class Transition < PetrinetNode
+  attr_reader :inputs, :outputs
+
   def initialize(id, name)
     super id, name
     @inputs = []
