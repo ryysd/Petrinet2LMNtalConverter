@@ -16,7 +16,7 @@ class Petrinet2LMNtalConverter
     expressions = petrinet.transitions.map do |transition|
       self_loop = calc_self_loop_places transition
       var_table = create_var_table transition, self_loop
-      "#{make_prefix transition}\n#{make_lhs transition, var_table, self_loop} :- #{make_guard transition, var_table, self_loop} | #{make_rhs transition, var_table, self_loop}"
+      "#{make_rule_name transition} #{make_lhs transition, var_table, self_loop} :- #{make_guard transition, var_table, self_loop} | #{make_rhs transition, var_table, self_loop}"
     end
     lmntal.push expressions
 
@@ -75,12 +75,8 @@ class Petrinet2LMNtalConverter
     "#{make_local_tmp_var_name var_table[place.id]}=#{make_local_var_name var_table[place.id]}-#{val}"
   end
 
-  def make_prefix(transition)
-    prefix = []
-    # prefix.push "// #{transition.inputs.map {|input| input.id}.join ','} -> #{transition.outputs.map {|input| input.id}.join ','}"
-    prefix.push "#{transition.id.gsub(/\W+/, '')} @@"
-
-    prefix.join "\n"
+  def make_rule_name(transition)
+    "#{transition.id.gsub(/\W+/, '')} @@"
   end
 
   def make_lhs(transition, var_table, self_loop_places)
